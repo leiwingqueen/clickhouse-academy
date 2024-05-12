@@ -38,7 +38,7 @@ h. The PRIMARY KEY is (fiscal_year, program)
 
 DESC s3('https://learn-clickhouse.s3.us-east-2.amazonaws.com/operating_budget.csv') settings format_csv_delimiter='~'
 
-CREATE TABLE test.operating_budget (
+CREATE TABLE operating_budget (
     fiscal_year LowCardinality(String),
     service LowCardinality(String),
     department LowCardinality(String),
@@ -55,9 +55,28 @@ CREATE TABLE test.operating_budget (
 ENGINE = MergeTree
 PRIMARY KEY (fiscal_year,program);
 
-select c1 as fiscal_year,c2 as service,c3 as department,c4 as program,
-c5 as description,c6 as item_category,c7 as approved_amount,
-c8 as recommended_amount,c9 as actual_amount,c10 as fund,
+select c1 as fiscal_year,c2 as service,c3 as department,splitByChar('(',assumeNotNull(c4))[1] as program,
+c5 as description,c6 as item_category,
+toUInt32OrZero(c7) as approved_amount,
+toUInt32OrZero(c8) as recommended_amount,
+toDecimal64(c9,2) as actual_amount,c10 as fund,
 c11 as fund_type,splitByChar(')',splitByChar('(',assumeNotNull(c4))[2])[1] as program_code 
 from s3('https://learn-clickhouse.s3.us-east-2.amazonaws.com/operating_budget.csv') limit 10 settings format_csv_delimiter='~',input_format_csv_skip_first_lines=1\G
+
+
+INSERT INTO operating_budget
+	select c1 as fiscal_year,c2 as service,c3 as department,splitByChar('(',assumeNotNull(c4))[1] as program,
+c5 as description,c6 as item_category,
+toUInt32OrZero(c7) as approved_amount,
+toUInt32OrZero(c8) as recommended_amount,
+toDecimal64(c9,2) as actual_amount,c10 as fund,
+c11 as fund_type,splitByChar(')',splitByChar('(',assumeNotNull(c4))[2])[1] as program_code 
+from s3('https://learn-clickhouse.s3.us-east-2.amazonaws.com/operating_budget.csv') settings format_csv_delimiter='~',input_format_csv_skip_first_lines=1\G
+
+select count() from s3('https://learn-clickhouse.s3.us-east-2.amazonaws.com/operating_budget.csv') settings format_csv_delimiter='~';
+
+select sum(approved_amount) from operating_budget where fiscal_year='2022';
+
+select sum(actual_amount) from operating_budget where fiscal_year='2022' and program_code='031';
+
 
