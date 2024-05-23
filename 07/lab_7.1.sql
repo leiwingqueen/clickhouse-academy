@@ -49,3 +49,4 @@ WHERE town = 'LONDON'
     sum(sum_price) AS sum,
     formatReadableQuantity(sum)
 FROM prices_sum_dest group by town order by sum desc limit 10
+
