@@ -40,3 +40,5 @@ GROUP BY month
 # 测试查询
 select month,min(min_price),max(max_price),avgMerge(avg_price),countMerge(total) from uk_prices_aggs_dest group by month limit 10
 
+
+
